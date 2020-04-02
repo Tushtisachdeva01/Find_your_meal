@@ -1,13 +1,72 @@
 import 'package:flutter/material.dart';
 
-import './screens/tabs_screen.dart';
+import './dummydata.dart';
+import './screens/filter_screen.dart';
+import './screens/tab_screen2.dart';
 import './screens/mealDetail_screen.dart';
 import './screens/meals_screen.dart';
 import './screens/categories_screen.dart';
+import './models/meals.dart';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Map<String, bool> filters = {
+    'gluten': false,
+    'lactose': false,
+    'vegan': false,
+    'vegetarian': false,
+  };
+
+  List<Meal> availableMeal = DUMMY_MEALS;
+
+  List<Meal> favouriteMeal = [];
+
+  void setFilters(Map<String, bool> filterData) {
+    setState(() {
+      filters = filterData;
+      availableMeal = DUMMY_MEALS.where((meal) {
+        if (filters['gluten'] && !meal.isGlutenFree) {
+          return false;
+        }
+        if (filters['lactose'] && !meal.isLactoseFree) {
+          return false;
+        }
+        if (filters['vegan'] && !meal.isVegan) {
+          return false;
+        }
+        if (filters['vegetatian'] && !meal.isVegetarian) {
+          return false;
+        }
+        return true;
+      }).toList();
+    });
+  }
+
+  void toggleFavourite(String mealId) {
+    final index = favouriteMeal.indexWhere((meal) => meal.id == mealId);
+    if (index >= 0) {
+      setState(() {
+        favouriteMeal.removeAt(index);
+      });
+    } else {
+      setState(() {
+        favouriteMeal.add(
+        DUMMY_MEALS.firstWhere((meal) => meal.id == mealId),
+      );
+      });
+    }
+  }
+
+  bool isFav(String id){
+    return favouriteMeal.any((meal) => meal.id == id);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -28,10 +87,12 @@ class MyApp extends StatelessWidget {
               ),
             ),
       ),
-      home: TabScreen(),
+      initialRoute: '/start',
       routes: {
-        '/meals': (ctx) => MealsScreen(),
-        '/mealDetail': (ctx) => MealDetailScreen()
+        '/start': (ctx) => TabsScreen(favouriteMeal),
+        '/meals': (ctx) => MealsScreen(availableMeal),
+        '/mealDetail': (ctx) => MealDetailScreen(toggleFavourite ,isFav),
+        '/filters': (ctx) => FilterScreen(filters, setFilters),
         // MealDetailScreen.routeName : (ctx) =>MealDetailScreen()
       },
       onUnknownRoute: (settings) {
